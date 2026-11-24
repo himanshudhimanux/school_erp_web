@@ -162,7 +162,7 @@ export function StudentDetail() {
                 <div className="card"><div className="card-body row g-3">
                   {[['Gender', titleCase(s.gender)], ['Date of birth', date(s.dateOfBirth)], ['Blood group', s.bloodGroup || '—'], ['Campus', s.campus?.name], ['Phone', s.phone || '—'], ['Email', s.email || '—'], ['Previous school', s.previousSchool || '—'], ['Student login', s.portal.enabled ? `Enabled (${s.portal.email})` : 'Not enabled']].map(([k, v]) => <div className="col-sm-6 col-lg-3" key={k}><div className="small text-muted">{k}</div><div>{v}</div></div>)}
                   {auth.can('students.update', 'users.create') && !s.portal.enabled && s.status === 'active' && (
-                    <div className="col-12"><button className="btn btn-sm btn-outline-primary" disabled={portal.pending || !s.email} title={s.email ? '' : 'Add an email address first'} onClick={() => portal.mutate({}).then((r) => { q.setData(r.student); toast.success(r.isNewUser ? 'Student login created. A set-password email was sent.' : 'Student login enabled'); }).catch((e) => toast.error(e.message))}>Give student portal access</button></div>
+                    <div className="col-12"><button className="btn btn-sm btn-outline-primary" disabled={portal.pending || !s.email} title={s.email ? '' : 'Add an email address first'} onClick={() => portal.mutate({}).then((r) => { q.setData(r.student); toast.added(r.isNewUser ? 'Student login created' : 'Student login enabled', r); }).catch((e) => toast.error(e.message))}>Give student portal access</button></div>
                   )}
                 </div></div>
               </div>
@@ -281,7 +281,7 @@ export function Parents() {
             { key: 'name', label: 'Parent', render: (r) => <><div className="fw-semibold">{r.name}</div><div className="small text-muted">{r.occupation || ''}</div></> },
             { key: 'phone', label: 'Contact', render: (r) => <><a href={`tel:${r.phone}`}>{r.phone}</a><div className="small text-muted">{r.email || ''}</div></> },
             { key: 'children', label: 'Children', render: (r) => r.children.length ? r.children.map((c) => <div key={c.studentId}><Link to={`/students/${c.studentId}`}>{c.name}</Link> <span className="small text-muted">{c.classSection?.displayName} · {titleCase(c.relation)}</span></div>) : <span className="text-muted">None linked</span> },
-            { key: 'portal', label: 'App login', render: (r) => r.portal.enabled ? <StatusBadge status="active" label="Enabled" /> : auth.can('parents.update', 'users.create') && r.email ? <button className="btn btn-sm btn-outline-primary" disabled={portal.pending} onClick={() => portal.mutate(r._id).then((x) => { q.reload(); toast.success(x.isNewUser ? 'Login created; a set-password email was sent' : 'Parent login enabled'); }).catch((e) => toast.error(e.message))}>Enable</button> : <span className="small text-muted">{r.email ? 'Not enabled' : 'Needs email'}</span> },
+            { key: 'portal', label: 'App login', render: (r) => r.portal.enabled ? <StatusBadge status="active" label="Enabled" /> : auth.can('parents.update', 'users.create') && r.email ? <button className="btn btn-sm btn-outline-primary" disabled={portal.pending} onClick={() => portal.mutate(r._id).then((x) => { q.reload(); toast.added(x.isNewUser ? 'Parent login created' : 'Parent login enabled', x); }).catch((e) => toast.error(e.message))}>Enable</button> : <span className="small text-muted">{r.email ? 'Not enabled' : 'Needs email'}</span> },
           ]} />
         )}
         <Pagination meta={q.data?.meta} onPage={setPage} />
@@ -407,7 +407,7 @@ export function Staff() {
         <Pagination meta={q.data?.meta} onPage={setPage} />
       </div>
       {d.isOpen && (
-        <Modal title="Add staff member" size="modal-lg" onClose={d.close} footer={<><button className="btn btn-outline-secondary" onClick={d.close}>Cancel</button><button className="btn btn-primary" disabled={add.pending || !f.name || !f.email} onClick={() => add.mutate({ name: f.name, email: f.email, phone: f.phone || undefined, roles: [f.role], profile: { department: f.department || undefined, designation: f.designation || undefined, joiningDate: f.joiningDate || undefined } }).then((r) => { d.close(); q.reload(); toast.success(r.isNewUser ? 'Staff added. A set-password email was sent.' : 'Staff added'); }).catch(() => {})}>Add</button></>}>
+        <Modal title="Add staff member" size="modal-lg" onClose={d.close} footer={<><button className="btn btn-outline-secondary" onClick={d.close}>Cancel</button><button className="btn btn-primary" disabled={add.pending || !f.name || !f.email} onClick={() => add.mutate({ name: f.name, email: f.email, phone: f.phone || undefined, roles: [f.role], profile: { department: f.department || undefined, designation: f.designation || undefined, joiningDate: f.joiningDate || undefined } }).then((r) => { d.close(); q.reload(); toast.added('Staff added', r); }).catch(() => {})}>Add</button></>}>
           <FormError error={add.error} />
           <div className="row g-2">
             <div className="col-md-6"><FormField label="Full name" name="sn" required error={fe.name}><input id="sn" className="form-control" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></FormField></div>

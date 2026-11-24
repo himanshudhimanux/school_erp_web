@@ -136,7 +136,7 @@ export function Members() {
         <Modal title={f.id ? `Edit ${f.name}` : 'Add user'} onClose={d.close} footer={<>
           {f.id && auth.can('users.delete') && <button className="btn btn-outline-danger me-auto" onClick={() => remove.open(f)}>Remove from school</button>}
           <button className="btn btn-outline-secondary" onClick={d.close}>Cancel</button>
-          <button className="btn btn-primary" disabled={save.pending || !f.roles.some((r) => STAFF_ROLES.includes(r)) || (!f.id && (!f.name || !f.email))} onClick={() => save.mutate(f).then((r) => { d.close(); q.reload(); toast.success(r?.isNewUser ? 'User added; a set-password email was sent' : 'Saved'); }).catch(() => {})}>Save</button>
+          <button className="btn btn-primary" disabled={save.pending || !f.roles.some((r) => STAFF_ROLES.includes(r)) || (!f.id && (!f.name || !f.email))} onClick={() => save.mutate(f).then((r) => { d.close(); q.reload(); if (r?.isNewUser !== undefined) toast.added('User added', r); else toast.success('Saved'); }).catch(() => {})}>Save</button>
         </>}>
           <FormError error={save.error} />
           {!f.id && <>

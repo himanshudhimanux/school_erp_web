@@ -26,7 +26,7 @@ function audienceText(a) {
   return parts.join(' ');
 }
 
-/** Channel list from /communication/channels: only channels the server can deliver are offered (email may be chosen before SMTP is set up). */
+/** Channel list from /communication/channels: only channels the server can deliver are offered (email may be chosen before Resend is set up). */
 function useChannels() {
   return useQuery(() => api.get('/communication/channels'), []);
 }
@@ -445,7 +445,7 @@ export function CommunicationSettings() {
                             <i className={`bi bi-${CHANNEL_ICON[c.channel]} me-2`} />{c.label}
                             <div className="small text-muted">
                               {c.channel === 'in_app' && 'Always on. Read receipts available.'}
-                              {c.channel === 'email' && (c.available ? 'SMTP configured.' : 'SMTP is not configured on the server; email notifications are recorded as failed.')}
+                              {c.channel === 'email' && (c.available ? 'Resend configured.' : 'Email (Resend) is not configured on the server; email notifications are recorded as failed.')}
                               {['sms', 'whatsapp'].includes(c.channel) && (c.available ? (c.deliveryReceipts ? 'Configured. Delivery receipts on.' : 'Configured. Set PUBLIC_API_URL on the server for delivery receipts.') : 'Not configured on the server (Twilio).')}
                               {c.channel === 'push' && (c.available ? 'Configured. Reaches people who have the mobile app installed and signed in.' : 'Not configured on the server (Firebase).')}
                             </div>

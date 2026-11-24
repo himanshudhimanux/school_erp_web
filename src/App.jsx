@@ -83,7 +83,7 @@ function RequireAuth({ children }) {
 
 function Home() {
   const auth = useAuth();
-  return <Navigate to={!auth.tenant && auth.isPlatformAdmin ? '/platform/schools' : '/dashboard'} replace />;
+  return <Navigate to={!auth.tenant && auth.isPlatformAdmin ? '/platform/analytics' : '/dashboard'} replace />;
 }
 
 const NotFound = () => <EmptyState icon="signpost-split" title="Page not found" message="The page you are looking for does not exist." />;

@@ -4,7 +4,7 @@ import { api } from '../api/client.js';
 import { useDebounced, useMutation, useQuery } from '../hooks/useApi.js';
 import { useToast } from '../components/Toast.jsx';
 import { PageHeader, StatCard, StatusBadge, QueryState, EmptyState, ErrorState, DataTable, Pagination, SearchInput, FilterBar, FormField, FormError, Modal, ConfirmDialog, useDialog } from '../components/ui.jsx';
-import { StudentPicker } from '../components/pickers.jsx';
+import { StudentPicker, BookPicker } from '../components/pickers.jsx';
 import { money, date, dateTime, toMinor, fromMinor, todayYmd, titleCase } from '../utils/format.js';
 
 const Tabs = ({ tabs, tab, setTab }) => (
@@ -41,10 +41,7 @@ function Loans({ onChange }) {
   const [f, setF] = useState({ status: 'issued', page: 1 });
   const q = useQuery(() => api.list('/library/issues', { ...f, limit: 25 }), [JSON.stringify(f)]);
   const issue = useDialog();
-  const [form, setForm] = useState({ book: '', student: null, staff: '', mode: 'student' });
-  const [bookSearch, setBookSearch] = useState('');
-  const bs = useDebounced(bookSearch);
-  const books = useQuery(() => api.list('/library/books', { search: bs, available: 'true', limit: 10 }), [bs], { enabled: issue.isOpen });
+  const [form, setForm] = useState({ book: null, student: null, staff: '', mode: 'student' });
   const staff = useQuery(() => api.list('/staff', { limit: 100, status: 'active' }), [], { enabled: issue.isOpen && form.mode === 'staff' && auth.can('staff.read') });
   const issueM = useMutation((b) => api.post('/library/issues', b));
   const act = useMutation(({ path, body }) => api.post(path, body));
@@ -56,7 +53,7 @@ function Loans({ onChange }) {
       <FilterBar>
         <div className="btn-group btn-group-sm">{[['issued', 'On loan'], ['overdue', 'Overdue'], ['returned', 'Returned'], ['lost', 'Lost']].map(([k, l]) => <button key={k} type="button" className={`btn ${f.status === k ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setF({ status: k, page: 1 })}>{l}</button>)}</div>
         <select className="form-select form-select-sm" style={{ maxWidth: 180 }} aria-label="Fine status" value={f.fineStatus || ''} onChange={(e) => setF({ ...f, fineStatus: e.target.value, page: 1 })}><option value="">Any fine</option><option value="pending">Fine pending</option><option value="charged">Added to fees</option><option value="waived">Waived</option></select>
-        {auth.can('library.issue') && <button type="button" className="btn btn-primary btn-sm ms-auto" onClick={() => { issueM.reset(); setForm({ book: '', student: null, staff: '', mode: 'student' }); issue.open(); }}><i className="bi bi-journal-arrow-up me-1" />Issue book</button>}
+        {auth.can('library.issue') && <button type="button" className="btn btn-primary btn-sm ms-auto" onClick={() => { issueM.reset(); setForm({ book: null, student: null, staff: '', mode: 'student' }); issue.open(); }}><i className="bi bi-journal-arrow-up me-1" />Issue book</button>}
       </FilterBar>
       {q.error ? <ErrorState error={q.error} onRetry={q.reload} /> : (
         <DataTable loading={q.loading} rows={q.data?.items} empty={<EmptyState icon="book" title="No loans" />} columns={[
@@ -73,13 +70,12 @@ function Loans({ onChange }) {
       )}
       <Pagination meta={q.data?.meta} onPage={(p) => setF({ ...f, page: p })} />
       {issue.isOpen && (
-        <Modal title="Issue a book" onClose={issue.close} footer={<><button className="btn btn-outline-secondary" onClick={issue.close}>Cancel</button><button className="btn btn-primary" disabled={issueM.pending || !form.book || (form.mode === 'student' ? !form.student : !form.staff)} onClick={() => issueM.mutate({ bookId: form.book, ...(form.mode === 'student' ? { studentId: form.student._id } : { membershipId: form.staff }) }).then((r) => { issue.close(); done(`Issued. Due ${date(r.dueDate)}`); }).catch(() => {})}>Issue</button></>}>
+        <Modal title="Issue a book" onClose={issue.close} footer={<><button className="btn btn-outline-secondary" onClick={issue.close}>Cancel</button><button className="btn btn-primary" disabled={issueM.pending || !form.book || (form.mode === 'student' ? !form.student : !form.staff)} onClick={() => issueM.mutate({ bookId: form.book._id, ...(form.mode === 'student' ? { studentId: form.student._id } : { membershipId: form.staff }) }).then((r) => { issue.close(); done(`Issued. Due ${date(r.dueDate)}`); }).catch(() => {})}>Issue</button></>}>
           <FormError error={issueM.error} />
           <FormField label="Book" required>
-            <input className="form-control mb-2" placeholder="Search available books…" value={bookSearch} onChange={(e) => setBookSearch(e.target.value)} />
-            <select className="form-select" aria-label="Book" size={Math.min(6, (books.data?.items.length || 0) + 1)} value={form.book} onChange={(e) => setForm({ ...form, book: e.target.value })}>
-              {books.data?.items.map((b) => <option key={b._id} value={b._id}>{b.title}{b.author ? ` · ${b.author}` : ''} ({b.availableCopies} available)</option>)}
-            </select>
+            {form.book
+              ? <div className="d-flex justify-content-between align-items-start border rounded p-2 bg-light"><div><div className="fw-semibold"><i className="bi bi-check-circle-fill text-success me-1" />{form.book.title}</div><div className="small text-muted">{form.book.author ? `${form.book.author} · ` : ''}{form.book.availableCopies} available</div></div><button type="button" className="btn btn-link btn-sm p-0" onClick={() => setForm({ ...form, book: null })}>Change</button></div>
+              : <BookPicker onSelect={(b) => setForm({ ...form, book: b })} />}
           </FormField>
           <div className="btn-group btn-group-sm mb-2">{['student', 'staff'].map((m) => <button key={m} type="button" className={`btn ${form.mode === m ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setForm({ ...form, mode: m })}>{titleCase(m)}</button>)}</div>
           {form.mode === 'student'

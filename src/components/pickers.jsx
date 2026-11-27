@@ -99,3 +99,33 @@ export function StudentPicker({ onSelect, placeholder = 'Search student by name,
     </div>
   );
 }
+
+/**
+ * Pick one available library book: type to search, click a result. Shows the first available
+ * titles before anything is typed. The parent shows the chosen book (and a "Change" link).
+ */
+export function BookPicker({ onSelect }) {
+  const [term, setTerm] = useState('');
+  const q = useDebounced(term.trim());
+  const res = useQuery(() => api.list('/library/books', { search: q || undefined, available: 'true', status: 'active', limit: 8 }), [q]);
+  const items = res.data?.items || [];
+  return (
+    <div>
+      <div className="input-group mb-2">
+        <span className="input-group-text bg-white"><i className="bi bi-search" /></span>
+        <input className="form-control" placeholder="Search by title, author or ISBN…" aria-label="Search books" value={term} autoFocus onChange={(e) => setTerm(e.target.value)} />
+      </div>
+      <div className="list-group" style={{ maxHeight: 260, overflowY: 'auto' }}>
+        {res.loading && !items.length && <div className="list-group-item small text-muted">Loading books…</div>}
+        {res.error && <div className="list-group-item small text-danger">{res.error.message}</div>}
+        {!res.loading && !res.error && !items.length && <div className="list-group-item small text-muted">{q ? 'No available books match.' : 'No books are available to issue.'}</div>}
+        {items.map((b) => (
+          <button key={b._id} type="button" className="list-group-item list-group-item-action" onClick={() => onSelect(b)}>
+            <div className="fw-semibold">{b.title}</div>
+            <div className="small text-muted">{[b.author, b.isbn && `ISBN ${b.isbn}`].filter(Boolean).join(' · ')}{b.author || b.isbn ? ' · ' : ''}{b.availableCopies} available</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}

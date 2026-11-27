@@ -145,7 +145,8 @@ function LibrarySettings() {
   const cats = useQuery(() => api.list('/fees/categories', { status: 'active', limit: 100 }), []);
   const [f, setF] = useState(null);
   const save = useMutation((b) => api.patch('/library/settings', b));
-  const v = f || (q.data && { ...q.data, fine: fromMinor(q.data.finePerDay) });
+  const v = f || (q.data && { ...q.data, fine: fromMinor(q.data.finePerDay), cap: fromMinor(q.data.maxFine) });
+  const capInvalid = Boolean(v && String(v.cap ?? '').trim() && !toMinor(v.cap));
   return (
     <div className="card" style={{ maxWidth: 560 }}>
       <div className="card-body">
@@ -155,13 +156,15 @@ function LibrarySettings() {
             <div className="row">
               <div className="col-6"><FormField label="Loan period (days)" name="ld"><input id="ld" type="number" min="1" className="form-control" value={v.loanDays} onChange={(e) => setF({ ...v, loanDays: e.target.value })} /></FormField></div>
               <div className="col-6"><FormField label="Fine per late day" name="fd"><input id="fd" className="form-control" inputMode="decimal" value={v.fine} onChange={(e) => setF({ ...v, fine: e.target.value })} /></FormField></div>
+              <div className="col-6"><FormField label="Maximum fine per loan" name="mx" hint="Leave empty for no cap" error={capInvalid ? 'Enter an amount, or leave empty' : undefined}><input id="mx" className={`form-control${capInvalid ? ' is-invalid' : ''}`} inputMode="decimal" placeholder="No cap" value={v.cap} onChange={(e) => setF({ ...v, cap: e.target.value })} /></FormField></div>
+              <div className="col-6" />
               <div className="col-6"><FormField label="Books per student" name="ms"><input id="ms" type="number" min="1" className="form-control" value={v.maxBooksStudent} onChange={(e) => setF({ ...v, maxBooksStudent: e.target.value })} /></FormField></div>
               <div className="col-6"><FormField label="Books per staff member" name="mf"><input id="mf" type="number" min="1" className="form-control" value={v.maxBooksStaff} onChange={(e) => setF({ ...v, maxBooksStaff: e.target.value })} /></FormField></div>
             </div>
             <FormField label="Fee category for library fines" name="fc" hint="Needed to add student fines to their fees">
               {cats.error ? <div className="small text-muted">Fees module not available.</div> : <select id="fc" className="form-select" value={v.fineCategoryId || ''} onChange={(e) => setF({ ...v, fineCategoryId: e.target.value || null })}><option value="">Not set</option>{cats.data?.items.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}</select>}
             </FormField>
-            <button className="btn btn-primary" disabled={save.pending || !f} onClick={() => save.mutate({ loanDays: Number(v.loanDays), finePerDay: toMinor(v.fine) ?? 0, maxBooksStudent: Number(v.maxBooksStudent), maxBooksStaff: Number(v.maxBooksStaff), fineCategoryId: v.fineCategoryId || null }).then((r) => { q.setData(r); setF(null); toast.success('Library settings saved'); }).catch(() => {})}>Save</button>
+            <button className="btn btn-primary" disabled={save.pending || !f || capInvalid} onClick={() => save.mutate({ loanDays: Number(v.loanDays), finePerDay: toMinor(v.fine) ?? 0, maxFine: String(v.cap ?? '').trim() ? toMinor(v.cap) : null, maxBooksStudent: Number(v.maxBooksStudent), maxBooksStaff: Number(v.maxBooksStaff), fineCategoryId: v.fineCategoryId || null }).then((r) => { q.setData(r); setF(null); toast.success('Library settings saved'); }).catch(() => {})}>Save</button>
           </>
         )}</QueryState>
       </div>
